@@ -1,0 +1,195 @@
+defaults:
+  budget: 0
+  format: auto
+
+directories:
+  hidden:
+    - .git
+    - .hg
+    - .svn
+    - node_modules
+    - __pycache__
+    - .mypy_cache
+    - .pytest_cache
+    - .ruff_cache
+    - .tox
+    - .venv
+    - venv
+    - .eggs
+    - "*.egg-info"
+    - target
+    - dist
+    - build
+    - .next
+    - .nuxt
+    - .cache
+    - .parcel-cache
+    - coverage
+    - .nyc_output
+    - .terraform
+    - .gradle
+    - .idea
+    - .vscode
+    - .DS_Store
+  collapse:
+    - data
+    - examples
+    - fixtures
+    - vendor
+    - third_party
+    - assets
+    - static
+    - public
+    - migrations
+    - snapshots
+  expand: []
+
+languages:
+  rust:
+    detect:
+      - Cargo.toml
+    extensions:
+      - rs
+    hidden:
+      - target
+    collapse: []
+    kinds:
+      test:
+        - "tests/**/*.rs"
+        - "**/test_*.rs"
+        - "**/*_test.rs"
+      ci:
+        - ".github/**"
+        - ".gitlab-ci.yml"
+      config:
+        - "Cargo.toml"
+        - "Cargo.lock"
+        - "rust-toolchain.toml"
+        - "rustfmt.toml"
+        - "clippy.toml"
+        - ".cargo/**"
+      build:
+        - "build.rs"
+        - "Makefile"
+        - ".otto.yml"
+      docs:
+        - "**/*.md"
+        - "docs/**"
+      source:
+        - "**/*.rs"
+
+  python:
+    detect:
+      - pyproject.toml
+      - setup.py
+      - setup.cfg
+      - Pipfile
+      - requirements.txt
+    extensions:
+      - py
+    hidden:
+      - __pycache__
+      - .mypy_cache
+      - .pytest_cache
+      - .ruff_cache
+      - .tox
+      - .venv
+      - venv
+      - .eggs
+      - "*.egg-info"
+    collapse: []
+    kinds:
+      test:
+        - "tests/**/*.py"
+        - "test/**/*.py"
+        - "**/test_*.py"
+        - "**/*_test.py"
+        - "conftest.py"
+        - "**/conftest.py"
+      ci:
+        - ".github/**"
+        - ".gitlab-ci.yml"
+        - "tox.ini"
+      config:
+        - "pyproject.toml"
+        - "setup.py"
+        - "setup.cfg"
+        - "Pipfile"
+        - "Pipfile.lock"
+        - "requirements*.txt"
+        - ".flake8"
+        - "mypy.ini"
+        - ".pylintrc"
+        - "ruff.toml"
+      build:
+        - "Makefile"
+        - "Dockerfile"
+        - ".otto.yml"
+      docs:
+        - "**/*.md"
+        - "**/*.rst"
+        - "docs/**"
+      source:
+        - "**/*.py"
+
+  typescript:
+    detect:
+      - tsconfig.json
+      - package.json
+    extensions:
+      - ts
+      - tsx
+      - js
+      - jsx
+    hidden:
+      - node_modules
+      - .next
+      - .nuxt
+      - dist
+      - build
+      - .cache
+      - .parcel-cache
+      - coverage
+      - .nyc_output
+    collapse: []
+    kinds:
+      test:
+        - "**/*.test.ts"
+        - "**/*.test.tsx"
+        - "**/*.test.js"
+        - "**/*.test.jsx"
+        - "**/*.spec.ts"
+        - "**/*.spec.tsx"
+        - "**/*.spec.js"
+        - "**/*.spec.jsx"
+        - "__tests__/**"
+        - "test/**"
+      ci:
+        - ".github/**"
+        - ".gitlab-ci.yml"
+      config:
+        - "package.json"
+        - "package-lock.json"
+        - "yarn.lock"
+        - "pnpm-lock.yaml"
+        - "tsconfig*.json"
+        - ".eslintrc*"
+        - ".prettierrc*"
+        - "babel.config.*"
+        - "webpack.config.*"
+        - "vite.config.*"
+        - "next.config.*"
+      build:
+        - "Makefile"
+        - "Dockerfile"
+        - ".otto.yml"
+        - "rollup.config.*"
+        - "esbuild.*"
+      docs:
+        - "**/*.md"
+        - "docs/**"
+      source:
+        - "**/*.ts"
+        - "**/*.tsx"
+        - "**/*.js"
+        - "**/*.jsx"

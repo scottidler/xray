@@ -1,0 +1,21 @@
+[package]
+name = "xray"
+version = "0.1.0"
+edition = "2024"
+authors = ["Scott Idler <scott.a.idler@gmail.com>"]
+build = "build.rs"
+description = "Context-aware codebase explorer for agentic LLMs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+dirs = "6"
+eyre = "0.6"
+ignore = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+
+[build-dependencies]
+
+[dev-dependencies]
+tempfile = "3.26.0"
