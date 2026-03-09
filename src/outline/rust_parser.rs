@@ -14,8 +14,8 @@ impl LanguageParser for RustParser {
         Ok(visitor.symbols)
     }
 
-    fn language(&self) -> &str {
-        "rust"
+    fn handles_extension(&self, ext: &str) -> bool {
+        ext == "rs"
     }
 }
 

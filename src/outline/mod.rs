@@ -7,13 +7,16 @@ use std::path::Path;
 use crate::classify;
 use crate::config::Config;
 
+mod python_parser;
 mod rust_parser;
+mod ts_parser;
 
+pub use python_parser::PythonParser;
 pub use rust_parser::RustParser;
+pub use ts_parser::{JavaScriptParser, TypeScriptParser};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
-#[allow(dead_code)] // Class, Interface used by Python/TS parsers in Phase 4
 pub enum SymbolKind {
     Function,
     Method,
@@ -52,7 +55,7 @@ pub struct OutlineOutput {
 
 pub trait LanguageParser: Send + Sync {
     fn extract_symbols(&self, source: &str) -> Result<Vec<Symbol>>;
-    fn language(&self) -> &str;
+    fn handles_extension(&self, ext: &str) -> bool;
 }
 
 /// Filter to apply to symbol visibility
@@ -127,20 +130,21 @@ pub fn build_outline(
 fn build_parsers(detected_languages: &[String]) -> Vec<Box<dyn LanguageParser>> {
     let mut parsers: Vec<Box<dyn LanguageParser>> = Vec::new();
     for lang in detected_languages {
-        if lang == "rust" {
-            parsers.push(Box::new(RustParser));
+        match lang.as_str() {
+            "rust" => parsers.push(Box::new(RustParser)),
+            "python" => parsers.push(Box::new(PythonParser)),
+            "typescript" => {
+                parsers.push(Box::new(TypeScriptParser));
+                parsers.push(Box::new(JavaScriptParser));
+            }
+            _ => {}
         }
     }
     parsers
 }
 
 fn parser_handles_ext(parser: &dyn LanguageParser, ext: &str) -> bool {
-    match parser.language() {
-        "rust" => ext == "rs",
-        "python" => ext == "py",
-        "typescript" => matches!(ext, "ts" | "tsx" | "js" | "jsx"),
-        _ => false,
-    }
+    parser.handles_extension(ext)
 }
 
 fn collect_source_files(
