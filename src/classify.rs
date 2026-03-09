@@ -107,9 +107,57 @@ mod tests {
 
     #[test]
     fn test_test_priority_over_source() {
-        // tests/foo.rs should be test, not source, even though *.rs matches source
         let config = test_config();
         let kind = classify_file("tests/foo.rs", &config, &["rust".to_string()]);
         assert_eq!(kind, FileKind::Test);
+    }
+
+    #[test]
+    fn test_classify_python_source() {
+        let config = test_config();
+        let kind = classify_file("myapp/core.py", &config, &["python".to_string()]);
+        assert_eq!(kind, FileKind::Source);
+    }
+
+    #[test]
+    fn test_classify_python_test() {
+        let config = test_config();
+        let kind = classify_file("tests/test_core.py", &config, &["python".to_string()]);
+        assert_eq!(kind, FileKind::Test);
+    }
+
+    #[test]
+    fn test_classify_typescript_source() {
+        let config = test_config();
+        let kind = classify_file("src/app.ts", &config, &["typescript".to_string()]);
+        assert_eq!(kind, FileKind::Source);
+    }
+
+    #[test]
+    fn test_classify_typescript_test() {
+        let config = test_config();
+        let kind = classify_file("src/app.test.ts", &config, &["typescript".to_string()]);
+        assert_eq!(kind, FileKind::Test);
+    }
+
+    #[test]
+    fn test_classify_ci_github_actions() {
+        let config = test_config();
+        let kind = classify_file(".github/workflows/ci.yml", &config, &["rust".to_string()]);
+        assert_eq!(kind, FileKind::Ci);
+    }
+
+    #[test]
+    fn test_classify_no_language_fallback() {
+        let config = test_config();
+        let kind = classify_file("README.md", &config, &[]);
+        assert_eq!(kind, FileKind::Docs);
+    }
+
+    #[test]
+    fn test_classify_unknown_file() {
+        let config = test_config();
+        let kind = classify_file("random.xyz", &config, &["rust".to_string()]);
+        assert_eq!(kind, FileKind::Unknown);
     }
 }
