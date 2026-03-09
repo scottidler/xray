@@ -8,12 +8,14 @@ mod classify;
 mod cli;
 mod config;
 mod detect;
+mod outline;
 mod output;
 mod skeleton;
 
 use cli::{Cli, Layer};
 use config::Config;
 use detect::detect_languages;
+use outline::{VisibilityFilter, build_outline};
 use output::{check_budget, resolve_format, serialize};
 use skeleton::build_skeleton;
 
@@ -68,9 +70,32 @@ fn main() -> Result<()> {
             let output = serialize(&result, format)?;
             print!("{output}");
         }
-        Some(Layer::Outline { .. }) => {
-            eprintln!("outline layer is not yet implemented (coming in phase 3)");
-            process::exit(2);
+        Some(Layer::Outline { public, private, .. }) => {
+            let vis_filter = match (public, private) {
+                (true, false) => VisibilityFilter::Public,
+                (false, true) => VisibilityFilter::Private,
+                _ => VisibilityFilter::All,
+            };
+
+            let result = build_outline(
+                &target,
+                &config,
+                &detected_languages,
+                &cli.kinds,
+                &cli.pattern,
+                &cli.exclude,
+                vis_filter,
+            )?;
+
+            let total_lines = outline::count_output_lines(&result);
+
+            if let Err(exceeded) = check_budget(total_lines, budget) {
+                eprintln!("{exceeded}");
+                process::exit(1);
+            }
+
+            let output = serialize(&result, format)?;
+            print!("{output}");
         }
     }
 
