@@ -16,7 +16,10 @@ use cli::{Cli, Layer};
 use config::Config;
 use detect::detect_languages;
 use outline::{VisibilityFilter, build_outline};
-use output::{format_truncation_footer, resolve_format, serialize, truncate_to_budget};
+use output::{
+    format_truncation_footer, format_truncation_footer_compact, resolve_format, serialize, serialize_compact,
+    truncate_to_budget,
+};
 use skeleton::build_skeleton;
 
 fn main() -> Result<()> {
@@ -86,11 +89,20 @@ fn main() -> Result<()> {
                 cli.hidden,
             )?;
 
-            let serialized = serialize(&result, format)?;
-            let (output, info) = truncate_to_budget(&serialized, budget);
-            print!("{output}");
-            if info.truncated {
-                eprint!("{}", format_truncation_footer(&info, format));
+            if cli.compact {
+                let serialized = serialize_compact(&result);
+                let (output, info) = truncate_to_budget(&serialized, budget);
+                print!("{output}");
+                if info.truncated {
+                    eprint!("{}", format_truncation_footer_compact(&info));
+                }
+            } else {
+                let serialized = serialize(&result, format)?;
+                let (output, info) = truncate_to_budget(&serialized, budget);
+                print!("{output}");
+                if info.truncated {
+                    eprint!("{}", format_truncation_footer(&info, format));
+                }
             }
         }
     }
