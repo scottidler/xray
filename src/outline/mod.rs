@@ -308,10 +308,3 @@ fn count_symbol_lines(symbols: &[Symbol]) -> usize {
         .map(|s| 1 + s.children.as_ref().map(|c| count_symbol_lines(c)).unwrap_or(0))
         .sum()
 }
-
-pub fn count_output_lines(output: &OutlineOutput) -> usize {
-    // Each file header + its symbols
-    let file_lines: usize = output.files.values().map(|syms| 1 + count_symbol_lines(syms)).sum();
-    // files header: 1, lines footer: 1 = 2 overhead
-    2 + file_lines
-}

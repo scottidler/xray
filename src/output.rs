@@ -48,36 +48,70 @@ pub fn serialize<T: serde::Serialize>(value: &T, format: OutputFormat) -> Result
     }
 }
 
-/// Check budget and return error if exceeded.
-pub fn check_budget(line_count: usize, budget: usize) -> Result<(), BudgetExceeded> {
+#[derive(Debug, PartialEq, Eq)]
+pub struct TruncationInfo {
+    pub truncated: bool,
+    pub shown: usize,
+    pub total: usize,
+}
+
+/// Truncate output to budget lines. Returns the (possibly truncated) output and info.
+pub fn truncate_to_budget(output: &str, budget: usize) -> (String, TruncationInfo) {
     if budget == 0 {
-        return Ok(());
+        let total = output.lines().count();
+        return (
+            output.to_string(),
+            TruncationInfo {
+                truncated: false,
+                shown: total,
+                total,
+            },
+        );
     }
-    if line_count > budget {
-        return Err(BudgetExceeded {
-            actual: line_count,
-            budget,
-            overage: line_count - budget,
-        });
+
+    let total = output.lines().count();
+    if total <= budget {
+        return (
+            output.to_string(),
+            TruncationInfo {
+                truncated: false,
+                shown: total,
+                total,
+            },
+        );
     }
-    Ok(())
+
+    let truncated: String = output.lines().take(budget).collect::<Vec<_>>().join("\n");
+
+    (
+        truncated + "\n",
+        TruncationInfo {
+            truncated: true,
+            shown: budget,
+            total,
+        },
+    )
 }
 
-#[derive(Debug)]
-pub struct BudgetExceeded {
-    pub actual: usize,
-    pub budget: usize,
-    pub overage: usize,
+/// Format truncation footer based on output format.
+pub fn format_truncation_footer(info: &TruncationInfo, format: OutputFormat) -> String {
+    match format {
+        OutputFormat::Yaml => {
+            format!("truncated: true\nshown: {}\ntotal: {}\n", info.shown, info.total)
+        }
+        OutputFormat::Json => {
+            format!(
+                "{{\"truncated\": true, \"shown\": {}, \"total\": {}}}\n",
+                info.shown, info.total
+            )
+        }
+    }
 }
 
-impl std::fmt::Display for BudgetExceeded {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "budget exceeded: output would be {} lines (budget: {}, overage: {})\nhint: use --kind or --pattern to narrow scope, or increase --budget",
-            self.actual, self.budget, self.overage
-        )
-    }
+/// Format truncation footer for compact (plain text) mode.
+#[allow(dead_code)]
+pub fn format_truncation_footer_compact(info: &TruncationInfo) -> String {
+    format!("...truncated {}/{} lines shown\n", info.shown, info.total)
 }
 
 #[cfg(test)]
@@ -85,26 +119,78 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_budget_unlimited() {
-        assert!(check_budget(1000, 0).is_ok());
+    fn test_truncate_unlimited() {
+        let input = "line1\nline2\nline3\n";
+        let (output, info) = truncate_to_budget(input, 0);
+        assert_eq!(output, input);
+        assert!(!info.truncated);
+        assert_eq!(info.shown, 3);
+        assert_eq!(info.total, 3);
     }
 
     #[test]
-    fn test_budget_within() {
-        assert!(check_budget(50, 100).is_ok());
+    fn test_truncate_within_budget() {
+        let input = "line1\nline2\nline3\n";
+        let (output, info) = truncate_to_budget(input, 10);
+        assert_eq!(output, input);
+        assert!(!info.truncated);
     }
 
     #[test]
-    fn test_budget_exact() {
-        assert!(check_budget(100, 100).is_ok());
+    fn test_truncate_exact_budget() {
+        let input = "line1\nline2\nline3";
+        let (output, info) = truncate_to_budget(input, 3);
+        assert_eq!(output, input);
+        assert!(!info.truncated);
+        assert_eq!(info.shown, 3);
+        assert_eq!(info.total, 3);
     }
 
     #[test]
-    fn test_budget_exceeded() {
-        let err = check_budget(150, 100).expect_err("should exceed budget");
-        assert_eq!(err.actual, 150);
-        assert_eq!(err.budget, 100);
-        assert_eq!(err.overage, 50);
+    fn test_truncate_exceeds_budget() {
+        let input = "line1\nline2\nline3\nline4\nline5";
+        let (output, info) = truncate_to_budget(input, 2);
+        assert_eq!(output, "line1\nline2\n");
+        assert!(info.truncated);
+        assert_eq!(info.shown, 2);
+        assert_eq!(info.total, 5);
+    }
+
+    #[test]
+    fn test_truncation_footer_yaml() {
+        let info = TruncationInfo {
+            truncated: true,
+            shown: 50,
+            total: 200,
+        };
+        let footer = format_truncation_footer(&info, OutputFormat::Yaml);
+        assert!(footer.contains("truncated: true"));
+        assert!(footer.contains("shown: 50"));
+        assert!(footer.contains("total: 200"));
+    }
+
+    #[test]
+    fn test_truncation_footer_json() {
+        let info = TruncationInfo {
+            truncated: true,
+            shown: 50,
+            total: 200,
+        };
+        let footer = format_truncation_footer(&info, OutputFormat::Json);
+        assert!(footer.contains("\"truncated\": true"));
+        assert!(footer.contains("\"shown\": 50"));
+        assert!(footer.contains("\"total\": 200"));
+    }
+
+    #[test]
+    fn test_truncation_footer_compact() {
+        let info = TruncationInfo {
+            truncated: true,
+            shown: 5,
+            total: 42,
+        };
+        let footer = format_truncation_footer_compact(&info);
+        assert_eq!(footer, "...truncated 5/42 lines shown\n");
     }
 
     #[test]

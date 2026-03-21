@@ -310,10 +310,6 @@ pub fn simple_glob_match(pattern: &str, text: &str) -> bool {
     pattern == text
 }
 
-pub fn count_output_lines(output: &SkeletonOutput) -> usize {
-    4 + output.lines
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

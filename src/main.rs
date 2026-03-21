@@ -16,7 +16,7 @@ use cli::{Cli, Layer};
 use config::Config;
 use detect::detect_languages;
 use outline::{VisibilityFilter, build_outline};
-use output::{check_budget, resolve_format, serialize};
+use output::{format_truncation_footer, resolve_format, serialize, truncate_to_budget};
 use skeleton::build_skeleton;
 
 fn main() -> Result<()> {
@@ -61,15 +61,12 @@ fn main() -> Result<()> {
                 cli.hidden,
             )?;
 
-            let total_lines = skeleton::count_output_lines(&result);
-
-            if let Err(exceeded) = check_budget(total_lines, budget) {
-                eprintln!("{exceeded}");
-                process::exit(1);
-            }
-
-            let output = serialize(&result, format)?;
+            let serialized = serialize(&result, format)?;
+            let (output, info) = truncate_to_budget(&serialized, budget);
             print!("{output}");
+            if info.truncated {
+                eprint!("{}", format_truncation_footer(&info, format));
+            }
         }
         Some(Layer::Outline { public, private, .. }) => {
             let vis_filter = match (public, private) {
@@ -89,15 +86,12 @@ fn main() -> Result<()> {
                 cli.hidden,
             )?;
 
-            let total_lines = outline::count_output_lines(&result);
-
-            if let Err(exceeded) = check_budget(total_lines, budget) {
-                eprintln!("{exceeded}");
-                process::exit(1);
-            }
-
-            let output = serialize(&result, format)?;
+            let serialized = serialize(&result, format)?;
+            let (output, info) = truncate_to_budget(&serialized, budget);
             print!("{output}");
+            if info.truncated {
+                eprint!("{}", format_truncation_footer(&info, format));
+            }
         }
     }
 
