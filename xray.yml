@@ -31,6 +31,11 @@ directories:
     - .idea
     - .vscode
     - .DS_Store
+    - .worktrees
+    - .taskstore
+    - .claude
+    - .env
+    - ".env.*"
   collapse:
     - data
     - examples

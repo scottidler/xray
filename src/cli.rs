@@ -44,6 +44,14 @@ pub struct Cli {
     /// Config file override
     #[arg(short, long, global = true)]
     pub config: Option<PathBuf>,
+
+    /// Show hidden files and directories (dotfiles)
+    #[arg(long, global = true)]
+    pub hidden: bool,
+
+    /// Compact one-line-per-symbol output (outline only)
+    #[arg(long, short = '1', global = true)]
+    pub compact: bool,
 }
 
 #[derive(Subcommand)]
