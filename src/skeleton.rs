@@ -51,6 +51,7 @@ struct TreeContext<'a> {
     kind_filter: &'a [String],
     pattern_filter: &'a [String],
     exclude_filter: &'a [String],
+    show_hidden: bool,
 }
 
 /// Build the skeleton tree for a given root directory.
@@ -61,6 +62,7 @@ pub fn build_skeleton(
     kind_filter: &[String],
     pattern_filter: &[String],
     exclude_filter: &[String],
+    show_hidden: bool,
 ) -> Result<SkeletonOutput> {
     let hidden = config.effective_hidden(detected_languages);
     let collapse = config.effective_collapse(detected_languages);
@@ -76,6 +78,7 @@ pub fn build_skeleton(
         kind_filter,
         pattern_filter,
         exclude_filter,
+        show_hidden,
     };
 
     let tree = build_tree(&ctx, root)?;
@@ -139,6 +142,11 @@ fn build_tree(ctx: &TreeContext<'_>, dir: &Path) -> Result<Vec<TreeEntry>> {
         };
 
         if metadata.is_symlink() {
+            continue;
+        }
+
+        // Skip dotfiles unless --hidden is passed
+        if !ctx.show_hidden && name.starts_with('.') {
             continue;
         }
 
@@ -373,5 +381,60 @@ mod tests {
             ],
         };
         assert_eq!(dir.line_count(), 3);
+    }
+
+    #[test]
+    fn test_dotfiles_hidden_by_default() {
+        let dir = tempfile::TempDir::new().expect("temp dir");
+        std::fs::write(dir.path().join("visible.rs"), "").expect("write");
+        std::fs::write(dir.path().join(".hidden"), "").expect("write");
+        let dotdir = dir.path().join(".dotdir");
+        std::fs::create_dir(&dotdir).expect("mkdir");
+        std::fs::write(dotdir.join("inside.rs"), "").expect("write");
+
+        let config = Config::default();
+        let langs: Vec<String> = vec![];
+        let empty: Vec<String> = vec![];
+
+        let result = build_skeleton(dir.path(), &config, &langs, &empty, &empty, &empty, false).expect("build");
+
+        let names: Vec<&str> = result
+            .tree
+            .iter()
+            .filter_map(|e| match e {
+                TreeEntry::File { file, .. } => Some(file.as_str()),
+                TreeEntry::Directory { dir, .. } => Some(dir.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        assert!(names.contains(&"visible.rs"));
+        assert!(!names.contains(&".hidden"));
+        assert!(!names.contains(&".dotdir/"));
+    }
+
+    #[test]
+    fn test_dotfiles_shown_with_flag() {
+        let dir = tempfile::TempDir::new().expect("temp dir");
+        std::fs::write(dir.path().join("visible.rs"), "").expect("write");
+        std::fs::write(dir.path().join(".hidden"), "").expect("write");
+
+        let config = Config::default();
+        let langs: Vec<String> = vec![];
+        let empty: Vec<String> = vec![];
+
+        let result = build_skeleton(dir.path(), &config, &langs, &empty, &empty, &empty, true).expect("build");
+
+        let names: Vec<&str> = result
+            .tree
+            .iter()
+            .filter_map(|e| match e {
+                TreeEntry::File { file, .. } => Some(file.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        assert!(names.contains(&"visible.rs"));
+        assert!(names.contains(&".hidden"));
     }
 }

@@ -67,6 +67,7 @@ pub enum VisibilityFilter {
 }
 
 /// Build the outline for files under root.
+#[allow(clippy::too_many_arguments)]
 pub fn build_outline(
     root: &Path,
     config: &Config,
@@ -75,6 +76,7 @@ pub fn build_outline(
     pattern_filter: &[String],
     exclude_filter: &[String],
     vis_filter: VisibilityFilter,
+    show_hidden: bool,
 ) -> Result<OutlineOutput> {
     let parsers = build_parsers(detected_languages);
 
@@ -95,6 +97,7 @@ pub fn build_outline(
         kind_filter,
         pattern_filter,
         exclude_filter,
+        show_hidden,
     )?;
 
     // Parse in parallel
@@ -147,6 +150,7 @@ fn parser_handles_ext(parser: &dyn LanguageParser, ext: &str) -> bool {
     parser.handles_extension(ext)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn collect_source_files(
     root: &Path,
     dir: &Path,
@@ -155,6 +159,7 @@ fn collect_source_files(
     kind_filter: &[String],
     pattern_filter: &[String],
     exclude_filter: &[String],
+    show_hidden: bool,
 ) -> Result<Vec<(String, std::path::PathBuf, String)>> {
     let hidden = config.effective_hidden(detected_languages);
     let mut files = Vec::new();
@@ -167,6 +172,7 @@ fn collect_source_files(
         kind_filter,
         pattern_filter,
         exclude_filter,
+        show_hidden,
         &mut files,
     )?;
     files.sort_by(|a, b| a.0.cmp(&b.0));
@@ -183,6 +189,7 @@ fn collect_files_recursive(
     kind_filter: &[String],
     pattern_filter: &[String],
     exclude_filter: &[String],
+    show_hidden: bool,
     out: &mut Vec<(String, std::path::PathBuf, String)>,
 ) -> Result<()> {
     let read_dir = match std::fs::read_dir(dir) {
@@ -198,6 +205,11 @@ fn collect_files_recursive(
             Err(_) => continue,
         };
 
+        // Skip dotfiles unless --hidden is passed
+        if !show_hidden && name.starts_with('.') {
+            continue;
+        }
+
         if hidden.iter().any(|h| h == &name) {
             continue;
         }
@@ -212,6 +224,7 @@ fn collect_files_recursive(
                 kind_filter,
                 pattern_filter,
                 exclude_filter,
+                show_hidden,
                 out,
             )?;
         } else if metadata.is_file() {

@@ -58,6 +58,7 @@ fn main() -> Result<()> {
                 &cli.kinds,
                 &cli.pattern,
                 &cli.exclude,
+                cli.hidden,
             )?;
 
             let total_lines = skeleton::count_output_lines(&result);
@@ -85,6 +86,7 @@ fn main() -> Result<()> {
                 &cli.pattern,
                 &cli.exclude,
                 vis_filter,
+                cli.hidden,
             )?;
 
             let total_lines = outline::count_output_lines(&result);
