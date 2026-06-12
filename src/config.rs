@@ -60,6 +60,21 @@ pub struct Config {
     pub languages: HashMap<String, LanguageConfig>,
 }
 
+/// XDG config dir, honoring `$XDG_CONFIG_HOME` and falling back to `$HOME/.config`.
+///
+/// We deliberately do NOT use `dirs::config_dir()`: it honors `$XDG_CONFIG_HOME`
+/// only on Linux. On macOS it resolves via system APIs and returns `~/Library/...`,
+/// ignoring the env var. This helper resolves to the same XDG layout on every platform.
+fn xdg_config_dir() -> Option<PathBuf> {
+    if let Ok(dir) = std::env::var("XDG_CONFIG_HOME") {
+        let path = PathBuf::from(dir);
+        if path.is_absolute() {
+            return Some(path);
+        }
+    }
+    dirs::home_dir().map(|h| h.join(".config"))
+}
+
 impl Config {
     /// Load configuration with fallback chain:
     /// embedded defaults → ~/.config/xray/xray.yml → --config override
@@ -74,7 +89,7 @@ impl Config {
         }
 
         // Try ~/.config/xray/xray.yml
-        if let Some(config_dir) = dirs::config_dir() {
+        if let Some(config_dir) = xdg_config_dir() {
             let global_config = config_dir.join("xray").join("xray.yml");
             if global_config.exists() {
                 match Self::load_from_file(&global_config) {
