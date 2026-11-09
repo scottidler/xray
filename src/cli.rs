@@ -5,7 +5,7 @@ use std::path::PathBuf;
 #[command(
     name = "xray",
     about = "Context-aware codebase explorer for agentic LLMs",
-    version = env!("GIT_DESCRIBE"),
+    version = env!("BUILD_VERSION"),
     after_help = "Examples:\n  xray                    # skeleton of current directory\n  xray skeleton src/      # skeleton of src/ only\n  xray outline -k source  # outline of source files only\n  xray -b 50              # skeleton with 50-line budget"
 )]
 pub struct Cli {
